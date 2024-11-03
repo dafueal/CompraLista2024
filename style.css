@@ -149,3 +149,14 @@ li {
     letter-spacing: 2px;
 }
 
+.input-section button:first-child { /* Style the first button */
+  padding: 10px; /* Adjust padding as needed */
+  background-color: #2962ff; 
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.input-section button:first-child img { /* Style the icon */
+  vertical-align: middle; /* Center the icon vertically */
+}
