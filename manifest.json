@@ -1,6 +1,6 @@
 {
-  "name": "Nombre de tu Aplicación",
-  "short_name": "NombreCorto",
+  "name": "CompraLista.2024",
+  "short_name": "CompraLista2024",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
