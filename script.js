@@ -50,7 +50,7 @@ function updateCodeDisplay(code) {
 function connectList() {
     const codeInput = document.getElementById('share-code');
     const code = codeInput.value.trim().toUpperCase();
-    
+
     if (code.length === 6) {
         currentCode = code;
         localStorage.setItem('currentListCode', code);
@@ -72,18 +72,18 @@ function subscribeToList(code) {
 
 function addItem() {
     console.log('Intentando añadir item');
-    
+
     const input = document.getElementById('item-input');
     const text = input.value.trim();
-    
+
     if (!currentCode) {
         console.log('No hay código de lista activo');
         initializeNewList();
     }
-    
+
     if (text !== '') {
         console.log('Añadiendo:', text, 'a la lista:', currentCode);
-        
+
         db.ref('lists/' + currentCode).push({
             text: text,
             completed: false,
@@ -101,7 +101,7 @@ function addItem() {
 function toggleComplete(itemId) {
     console.log('Toggle complete para item:', itemId);
     const itemRef = db.ref('lists/' + currentCode + '/' + itemId);
-    
+
     itemRef.get().then((snapshot) => {
         const item = snapshot.val();
         itemRef.update({
@@ -127,13 +127,13 @@ function renderList(items) {
     console.log('Renderizando lista:', items);
     const list = document.getElementById('shopping-list');
     list.innerHTML = '';
-    
+
     // Si items es un objeto, convertirlo a array
     const itemsArray = items ? Object.entries(items).map(([key, value]) => ({
         id: key,
         ...value
     })) : [];
-    
+
     itemsArray.forEach(item => {
         const li = document.createElement('li');
         if (item.completed) {
@@ -152,16 +152,16 @@ function renderList(items) {
 
 function shareList() {
     const listRef = db.ref('lists/' + currentCode);
-    
+
     listRef.get().then((snapshot) => {
         const items = snapshot.val();
         let textToShare = `CompraLista2024\n\nCódigo: ${currentCode}\n\nProductos:\n`;
-        
+
         Object.entries(items).forEach(([key, item]) => {
             const status = item.completed ? "✓" : "□";
             textToShare += `${status} ${item.text}\n`;
         });
-        
+
         if (navigator.share) {
             navigator.share({
                 title: 'CompraLista2024',
@@ -205,7 +205,7 @@ function hideCodeInput() {
 function connectList() {
     const codeInput = document.getElementById('share-code');
     const code = codeInput.value.trim().toUpperCase();
-    
+
     if (code.length === 6) {
         currentCode = code;
         localStorage.setItem('currentListCode', code);
@@ -215,6 +215,18 @@ function connectList() {
         hideCodeInput();
     }
 }
+
+// Speech Recognition Setup
+let recognition = new webkitSpeechRecognition(); // Or 'SpeechRecognition' if using a browser that supports it directly.
+recognition.lang = 'es-ES'; // Set the language to Spanish
+function startSpeechRecognition() {
+  recognition.start();
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript; // Get the spoken text
+    document.getElementById('item-input').value = transcript; // Display the transcript in the input field
+  };
+}
+
 
 // Modify the DOMContentLoaded event
 document.addEventListener('DOMContentLoaded', () => {
