@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/vnd.microsoft.icon" href="shopping-cart.ico">
+    <title>CompraLista.2024</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <img src="shopping-cart.png" alt="Shopping Cart" class="cart-icon">
+        <h1>CompraLista.2024</h1>
+        <img src="shopping-cart.png" alt="Shopping Cart" class="cart-icon">
+    </div>
+        
+        <div class="code-section">
+            <input type="text" id="share-code" placeholder="Código de lista..." maxlength="6">
+            <button onclick="connectList()" class="connect-btn">Conectar</button>
+        </div>
+
+        <div class="input-section">
+            <input type="text" id="item-input" placeholder="Añade un producto...">
+            <button onclick="addItem()">Añadir</button>
+        </div>
+
+        <ul id="shopping-list"></ul>
+        
+        <button onclick="clearAll()" class="clear-btn">Limpiar Lista</button>
+        <button onclick="shareList()" class="share-btn">Compartir Lista</button>
+        <button id="sync-button"onclick="showCodeInput()" class="sync-btn">Sincronizar con otro código</button>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+
+</body>
+</html>
+
