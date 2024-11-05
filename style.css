@@ -161,8 +161,3 @@ li {
   vertical-align: middle; /* Center the icon vertically */
 }
 
-// Add CSS for the 'suggestion' class in your style.css file:
-.suggestion {
-  opacity: 0.7; /* Make the suggestion item slightly transparent */
-  text-decoration: underline; /* Underline the suggestion item */
-}
