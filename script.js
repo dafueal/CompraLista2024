@@ -227,6 +227,154 @@ function startSpeechRecognition() {
   };
 }
 
+// ... sugerencia ...
+
+let itemTimes = {}; // Object to store timestamps for each item
+
+function addItem() {
+  const input = document.getElementById('item-input');
+  const text = input.value.trim();
+
+  if (!currentCode) {
+    initializeNewList();
+  }
+
+  if (text !== '') {
+    const timestamp = Date.now();
+    itemTimes[text] = itemTimes[text] || [];
+    itemTimes[text].push(timestamp);
+
+    db.ref('lists/' + currentCode).push({
+      text: text,
+      completed: false,
+      timestamp: timestamp
+    }).then(() => {
+      input.value = '';
+    })
+    .catch(error => {
+      console.log('Error al añadir:', error);
+    });
+  }
+}
+
+function renderList(items) {
+  const list = document.getElementById('shopping-list');
+  list.innerHTML = '';
+
+  const itemsArray = items ? Object.entries(items).map(([key, value]) => ({
+    id: key,
+    ...value
+  })) : [];
+
+  itemsArray.forEach(item => {
+    const li = document.createElement('li');
+    if (item.completed) {
+      li.classList.add('completed');
+    }
+
+    // Check if item is a suggestion
+    if (isSuggestion(item.text)) {
+      li.style.color = '#888'; // Lighter color for suggestions
+    }
+
+    li.innerHTML = `
+      <span>${item.text}</span>
+      <div class="actions">
+        <button class="check-btn" onclick="toggleComplete('${item.id}')">✓</button>
+        <button class="delete-btn" onclick="deleteItem('${item.id}')">Eliminar</button>
+      </div>
+    `;
+    list.appendChild(li);
+  });
+
+  // Update suggestion timer
+  updateSuggestionTimer();
+}
+
+function isSuggestion(itemText) {
+  const timestamps = itemTimes[itemText];
+  if (!timestamps || timestamps.length < 2) {
+    return false; // Not enough timestamps to calculate average
+  }
+
+  const avgTime = getAverageTime(timestamps);
+  const lastAdded = timestamps[timestamps.length - 1];
+  const currentTime = Date.now();
+
+  return currentTime - lastAdded > avgTime;
+}
+
+function getAverageTime(timestamps) {
+  let totalTime = 0;
+  for (let i = 1; i < timestamps.length; i++) {
+    totalTime += timestamps[i] - timestamps[i - 1];
+  }
+  return totalTime / (timestamps.length - 1);
+}
+
+function updateSuggestionTimer() {
+  const items = Object.keys(itemTimes);
+
+  items.forEach(item => {
+    const timestamps = itemTimes[item];
+    if (timestamps.length < 2) {
+      return; // Not enough timestamps to calculate average
+    }
+
+    const avgTime = getAverageTime(timestamps);
+    const lastAdded = timestamps[timestamps.length - 1];
+    const currentTime = Date.now();
+
+    if (currentTime - lastAdded > avgTime) {
+      // Add item as a suggestion
+      addItem(item, true);
+    }
+  });
+
+  setTimeout(updateSuggestionTimer, 1000); // Check again in 1 second
+}
+
+// ...fin de SUGERENCIA
+
+// ... (Existing JavaScript code) ...
+
+function renderList(items) {
+  const list = document.getElementById('shopping-list');
+  list.innerHTML = '';
+
+  const itemsArray = items ? Object.entries(items).map(([key, value]) => ({
+    id: key,
+    ...value
+  })) : [];
+
+  itemsArray.forEach(item => {
+    const li = document.createElement('li');
+    if (item.completed) {
+      li.classList.add('completed');
+    }
+
+    // Check if item is a suggestion
+    if (isSuggestion(item.text)) {
+      li.style.color = '#888'; // Lighter color for suggestions
+      li.classList.add('suggestion'); // Add a class for styling
+    }
+
+    li.innerHTML = `
+      <span>${item.text}</span>
+      <div class="actions">
+        <button class="check-btn" onclick="toggleComplete('${item.id}')">✓</button>
+        <button class="delete-btn" onclick="deleteItem('${item.id}')">Eliminar</button>
+      </div>
+    `;
+    list.appendChild(li);
+  });
+
+  // Update suggestion timer
+  updateSuggestionTimer();
+}
+
+// ... (Rest of your JavaScript code) ...
+
 
 // Modify the DOMContentLoaded event
 document.addEventListener('DOMContentLoaded', () => {
