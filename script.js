@@ -1,90 +1,255 @@
-// firebase-config.js already initializes the app
-// firebase.initializeApp(firebaseConfig); // <-- Esto ya está en firebase-config.js
+// Añadir al inicio del archivo
+console.log('Firebase Database:', db);
 
-// Habilitar persistencia offline ANTES de obtener la referencia a la base de datos
-firebase.database().enablePersistence()
-  .then(() => {
-    console.log('Persistencia offline habilitada');
-    // Ahora sí, obtenemos la referencia a la base de datos
-    const db = firebase.database();
+// Prueba de conexión
+const connectedRef = db.ref('.info/connected');
+connectedRef.on('value', (snap) => {
+  if (snap.val() === true) {
+    console.log('Conectado a Firebase');
+  } else {
+    console.log('No conectado a Firebase');
+  }
+});
 
-    // Prueba de conexión (ya la tienes, pero aquí dentro si quieres asegurarte de que db esté lista)
-    const connectedRef = db.ref('.info/connected');
-    connectedRef.on('value', (snap) => {
-      if (snap.val() === true) {
-        console.log('Conectado a Firebase');
-        // Opcional: Aquí podrías añadir lógica para sincronizar UI o mostrar estado online
-      } else {
-        console.log('No conectado a Firebase');
-        // Opcional: Aquí podrías añadir lógica para mostrar estado offline
-      }
+let currentCode = '';
+
+document.addEventListener('DOMContentLoaded', () => {
+    const savedCode = localStorage.getItem('currentListCode');
+    if (savedCode) {
+        currentCode = savedCode;
+        updateCodeDisplay(savedCode);
+        subscribeToList(savedCode);
+    } else {
+        initializeNewList();
+    }
+});
+
+function generateCode() {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+function initializeNewList() {
+    const code = generateCode();
+    currentCode = code;
+    localStorage.setItem('currentListCode', code);
+    updateCodeDisplay(code);
+    subscribeToList(code);
+}
+
+function updateCodeDisplay(code) {
+    let codeDisplay = document.querySelector('.code-display');
+    if (!codeDisplay) {
+        codeDisplay = document.createElement('div');
+        codeDisplay.className = 'code-display';
+        const container = document.querySelector('.container');
+        container.insertBefore(codeDisplay, container.firstChild);
+    }
+    codeDisplay.textContent = `Código de tu lista: ${code}`;
+}
+
+function connectList() {
+    const codeInput = document.getElementById('share-code');
+    const code = codeInput.value.trim().toUpperCase();
+
+    if (code.length === 6) {
+        currentCode = code;
+        localStorage.setItem('currentListCode', code);
+        updateCodeDisplay(code);
+        subscribeToList(code);
+        codeInput.value = '';
+    } else {
+        alert('Por favor, introduce un código válido de 6 caracteres');
+    }
+}
+
+function subscribeToList(code) {
+    const listRef = db.ref('lists/' + code);
+    listRef.on('value', (snapshot) => {
+        const data = snapshot.val() || [];
+        renderList(data);
     });
+}
 
-    // ... el resto de tu código que usa 'db' ...
-    // Asegúrate de que el código que usa 'db' esté definido *después* de que 'db' se inicialice
-    // O podrías envolver tu lógica principal (como el DOMContentLoaded listener) dentro de este .then()
-    // para garantizar que la persistencia esté habilitada antes de cargar datos o interactuar.
+function addItem() {
+    console.log('Intentando añadir item');
 
-     document.addEventListener('DOMContentLoaded', () => {
-        const savedCode = localStorage.getItem('currentListCode');
-        if (savedCode) {
-            currentCode = savedCode;
-            updateCodeDisplay(savedCode);
-            subscribeToList(savedCode); // Esta suscripción ahora usará la caché offline
-            hideCodeInput();
+    const input = document.getElementById('item-input');
+    const text = input.value.trim();
+
+    if (!currentCode) {
+        console.log('No hay código de lista activo');
+        initializeNewList();
+    }
+
+    if (text !== '') {
+        console.log('Añadiendo:', text, 'a la lista:', currentCode);
+
+        db.ref('lists/' + currentCode).push({
+            text: text,
+            completed: false,
+            timestamp: Date.now()
+        }).then(() => {
+            console.log('Item añadido exitosamente');
+            input.value = '';
+        }).catch(error => {
+            console.log('Error al añadir:', error);
+        });
+    }
+}
+
+
+function toggleComplete(itemId) {
+    console.log('Toggle complete para item:', itemId);
+    const itemRef = db.ref('lists/' + currentCode + '/' + itemId);
+
+    itemRef.get().then((snapshot) => {
+        const item = snapshot.val();
+        itemRef.update({
+            completed: !item.completed
+        });
+    });
+}
+
+function deleteItem(itemId) {
+    console.log('Intentando eliminar item:', itemId);
+    // Añadir la confirmación antes de eliminar
+    if (confirm('¿Estás seguro de que quieres eliminar este producto de la lista?')) {
+        console.log('Confirmación recibida. Eliminando item:', itemId);
+        const itemRef = db.ref('lists/' + currentCode + '/' + itemId);
+        itemRef.remove()
+          .then(() => {
+            console.log('Item eliminado exitosamente');
+          })
+          .catch(error => {
+            console.error('Error al eliminar item:', error);
+          });
+    } else {
+        console.log('Eliminación cancelada por el usuario.');
+    }
+}
+
+
+function clearAll() {
+    if (confirm('¿Estás seguro de que quieres eliminar toda la lista?')) {
+        db.ref('lists/' + currentCode).set([]);
+    }
+}
+
+function renderList(items) {
+    console.log('Renderizando lista:', items);
+    const list = document.getElementById('shopping-list');
+    list.innerHTML = '';
+
+    // Si items es un objeto, convertirlo a array
+    const itemsArray = items ? Object.entries(items).map(([key, value]) => ({
+        id: key,
+        ...value
+    })) : [];
+
+    itemsArray.forEach(item => {
+        const li = document.createElement('li');
+        if (item.completed) {
+            li.classList.add('completed');
+        }
+        li.innerHTML = `
+            <span>${item.text}</span>
+            <div class="actions">
+                <button class="check-btn" onclick="toggleComplete('${item.id}')">✓</button>
+                <button class="delete-btn" onclick="deleteItem('${item.id}')">Eliminar</button>
+            </div>
+        `;
+        list.appendChild(li);
+    });
+}
+
+function shareList() {
+    const listRef = db.ref('lists/' + currentCode);
+
+    listRef.get().then((snapshot) => {
+        const items = snapshot.val();
+        let textToShare = `CompraLista2024\n\nCódigo: ${currentCode}\n\nProductos:\n`;
+
+        Object.entries(items).forEach(([key, item]) => {
+            const status = item.completed ? "✓" : "□";
+            textToShare += `${status} ${item.text}\n`;
+        });
+
+        if (navigator.share) {
+            navigator.share({
+                title: 'CompraLista2024',
+                text: textToShare
+            });
         } else {
-            initializeNewList(); // Esto intentará escribir, se pondrá en cola si está offline
-            document.getElementById('sync-button').style.display = 'none';
+            fallbackShare(textToShare);
         }
     });
+}
 
-    // Resto de funciones: generateCode, initializeNewList, updateCodeDisplay, connectList,
-    // subscribeToList, addItem, toggleComplete, deleteItem, clearAll, renderList,
-    // shareList, fallbackShare, event listener para input, showCodeInput, hideCodeInput,
-    // Speech Recognition Setup (recognition, startSpeechRecognition)
-    // ... asegúrate de que todas estas funciones tengan acceso a la variable `db` si la usan.
-    // La forma más limpia sería definir 'db' fuera del then() pero asignarle el valor dentro,
-    // o simplemente poner la mayor parte de la lógica de inicialización dentro del then().
 
-  })
-  .catch((err) => {
-    // Manejar errores si la persistencia no se puede habilitar
-    // (por ejemplo, si el navegador no la soporta o hay un problema de espacio)
-    console.error("La persistencia offline de Firebase falló:", err);
-    // En este caso, la aplicación seguirá funcionando online, pero sin caché offline.
-    const db = firebase.database(); // Asegúrate de que db esté definida incluso si falla la persistencia
+function fallbackShare(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    alert('Código copiado al portapapeles');
+}
 
-    // Prueba de conexión (moverla aquí también si la lógica principal está fuera del then)
-     const connectedRef = db.ref('.info/connected');
-    connectedRef.on('value', (snap) => {
-      if (snap.val() === true) {
-        console.log('Conectado a Firebase');
-        // Opcional: Aquí podrías añadir lógica para sincronizar UI o mostrar estado online
-      } else {
-        console.log('No conectado a Firebase');
-        // Opcional: Aquí podrías añadir lógica para mostrar estado offline
-      }
-    });
+document.getElementById('item-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        addItem();
+    }
+});
 
-     document.addEventListener('DOMContentLoaded', () => {
-        const savedCode = localStorage.getItem('currentListCode');
-        if (savedCode) {
-            currentCode = savedCode;
-            updateCodeDisplay(savedCode);
-            subscribeToList(savedCode);
-            hideCodeInput();
-        } else {
-            initializeNewList();
-            document.getElementById('sync-button').style.display = 'none';
-        }
-    });
-    // Resto de funciones...
-  });
+// Add these new functions
+function showCodeInput() {
+    document.querySelector('.code-section').style.display = 'flex';
+    document.getElementById('sync-button').style.display = 'none';
+}
 
-// Es crucial que cualquier código que dependa de 'db' solo se ejecute *después* de que 'db'
-// haya sido inicializada, idealmente dentro del bloque .then() de enablePersistence,
-// o manejando el caso de error en el .catch().
+function hideCodeInput() {
+    document.querySelector('.code-section').style.display = 'none';
+    document.getElementById('sync-button').style.display = 'block';
+}
 
-// Para simplificar, podrías definir `let db;` al principio del script
-// y luego asignarle el valor dentro del then() y catch().
-// O reestructurar tu DOMContentLoaded para que espere a que db esté lista.
+// Modify the connectList function
+function connectList() {
+    const codeInput = document.getElementById('share-code');
+    const code = codeInput.value.trim().toUpperCase();
+
+    if (code.length === 6) {
+        currentCode = code;
+        localStorage.setItem('currentListCode', code);
+        updateCodeDisplay(code);
+        subscribeToList(code);
+        codeInput.value = '';
+        hideCodeInput();
+    }
+}
+
+// Speech Recognition Setup
+let recognition = new webkitSpeechRecognition(); // Or 'SpeechRecognition' if using a browser that supports it directly.
+recognition.lang = 'es-ES'; // Set the language to Spanish
+function startSpeechRecognition() {
+  recognition.start();
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript; // Get the spoken text
+    document.getElementById('item-input').value = transcript; // Display the transcript in the input field
+  };
+}
+
+// Modify the DOMContentLoaded event
+document.addEventListener('DOMContentLoaded', () => {
+    const savedCode = localStorage.getItem('currentListCode');
+    if (savedCode) {
+        currentCode = savedCode;
+        updateCodeDisplay(savedCode);
+        subscribeToList(savedCode);
+        hideCodeInput();
+    } else {
+        initializeNewList();
+        document.getElementById('sync-button').style.display = 'none';
+    }
+});
+
