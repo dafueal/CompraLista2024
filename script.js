@@ -111,9 +111,21 @@ function toggleComplete(itemId) {
 }
 
 function deleteItem(itemId) {
-    console.log('Eliminando item:', itemId);
-    const itemRef = db.ref('lists/' + currentCode + '/' + itemId);
-    itemRef.remove();
+    console.log('Intentando eliminar item:', itemId);
+    // Añadir la confirmación antes de eliminar
+    if (confirm('¿Estás seguro de que quieres eliminar este producto de la lista?')) {
+        console.log('Confirmación recibida. Eliminando item:', itemId);
+        const itemRef = db.ref('lists/' + currentCode + '/' + itemId);
+        itemRef.remove()
+          .then(() => {
+            console.log('Item eliminado exitosamente');
+          })
+          .catch(error => {
+            console.error('Error al eliminar item:', error);
+          });
+    } else {
+        console.log('Eliminación cancelada por el usuario.');
+    }
 }
 
 
@@ -240,3 +252,4 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('sync-button').style.display = 'none';
     }
 });
+
