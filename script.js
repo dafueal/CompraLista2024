@@ -138,28 +138,53 @@ function clearAll() {
     }
 }
 
-// *** AQUÍ ESTÁ EL CAMBIO PRINCIPAL ***
 function renderList(items) {
     console.log('Renderizando lista:', items);
     const list = document.getElementById('shopping-list');
     list.innerHTML = '';
 
-    // Si items es un objeto, convertirlo a array
-    const itemsArray = items ? Object.entries(items).map(([key, value]) => ({
+    // 1. Convertir objeto de Firebase a Array
+    let rawItemsArray = items ? Object.entries(items).map(([key, value]) => ({
         id: key,
         ...value
     })) : [];
 
-    // ORDENAR EL ARRAY:
-    // Los items con completed: false (no tachados) van primero
-    // Los items con completed: true (tachados) van al final
+    // 2. FILTRADO DE DUPLICADOS
+    const uniqueItemsMap = new Map();
+
+    rawItemsArray.forEach(item => {
+        // Usamos el texto en minúsculas y sin espacios extra como clave única
+        const normalizedText = item.text.trim().toLowerCase();
+
+        if (!uniqueItemsMap.has(normalizedText)) {
+            // Si no existe, lo añadimos
+            uniqueItemsMap.set(normalizedText, item);
+        } else {
+            // Si YA existe, aplicamos la regla:
+            // "Si uno está tachado y otro sin tachar, que se quede el que no está tachado"
+            const existingItem = uniqueItemsMap.get(normalizedText);
+
+            // Si el item que ya tenemos está completado (true) 
+            // Y el item actual que estamos revisando NO está completado (false)
+            // -> Reemplazamos el viejo por el actual (nos quedamos con el pendiente)
+            if (existingItem.completed && !item.completed) {
+                uniqueItemsMap.set(normalizedText, item);
+            }
+            // En cualquier otro caso, nos quedamos con el que ya estaba (prioridad al primero o al que no está tachado)
+        }
+    });
+
+    // Convertimos el mapa de vuelta a un array para poder ordenarlo
+    const itemsArray = Array.from(uniqueItemsMap.values());
+
+    // 3. ORDENAR (Lógica anterior)
+    // Pendientes arriba, tachados abajo
     itemsArray.sort((a, b) => {
-        // Si a está completado y b no, a va después (retorna 1)
-        // Si a no está completado y b sí, a va antes (retorna -1)
-        if (a.completed === b.completed) return 0; // Mantener orden si son iguales
+        if (a.completed === b.completed) return 0;
         return a.completed ? 1 : -1;
     });
 
+    // 4. DIBUJAR EN HTML
     itemsArray.forEach(item => {
         const li = document.createElement('li');
         if (item.completed) {
