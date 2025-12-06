@@ -19,8 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
         currentCode = savedCode;
         updateCodeDisplay(savedCode);
         subscribeToList(savedCode);
+        hideCodeInput();
     } else {
         initializeNewList();
+        document.getElementById('sync-button').style.display = 'none';
     }
 });
 
@@ -57,6 +59,7 @@ function connectList() {
         updateCodeDisplay(code);
         subscribeToList(code);
         codeInput.value = '';
+        hideCodeInput();
     } else {
         alert('Por favor, introduce un código válido de 6 caracteres');
     }
@@ -111,21 +114,21 @@ function toggleComplete(itemId) {
 }
 
 function deleteItem(itemId) {
-    console.log('Intentando eliminar item:', itemId);
-    // Añadir la confirmación antes de eliminar
-    if (confirm('¿Estás seguro de que quieres eliminar este producto de la lista?')) {
-        console.log('Confirmación recibida. Eliminando item:', itemId);
-        const itemRef = db.ref('lists/' + currentCode + '/' + itemId);
-        itemRef.remove()
-          .then(() => {
-            console.log('Item eliminado exitosamente');
-          })
-          .catch(error => {
-            console.error('Error al eliminar item:', error);
-          });
-    } else {
-        console.log('Eliminación cancelada por el usuario.');
-    }
+    console.log('Intentando eliminar item:', itemId);
+    // Añadir la confirmación antes de eliminar
+    if (confirm('¿Estás seguro de que quieres eliminar este producto de la lista?')) {
+        console.log('Confirmación recibida. Eliminando item:', itemId);
+        const itemRef = db.ref('lists/' + currentCode + '/' + itemId);
+        itemRef.remove()
+          .then(() => {
+            console.log('Item eliminado exitosamente');
+          })
+          .catch(error => {
+            console.error('Error al eliminar item:', error);
+          });
+    } else {
+        console.log('Eliminación cancelada por el usuario.');
+    }
 }
 
 
@@ -140,12 +143,48 @@ function renderList(items) {
     const list = document.getElementById('shopping-list');
     list.innerHTML = '';
 
-    // Si items es un objeto, convertirlo a array
-    const itemsArray = items ? Object.entries(items).map(([key, value]) => ({
+    // 1. Convertir objeto de Firebase a Array
+    let rawItemsArray = items ? Object.entries(items).map(([key, value]) => ({
         id: key,
         ...value
     })) : [];
 
+    // 2. FILTRADO DE DUPLICADOS
+    const uniqueItemsMap = new Map();
+
+    rawItemsArray.forEach(item => {
+        // Usamos el texto en minúsculas y sin espacios extra como clave única
+        const normalizedText = item.text.trim().toLowerCase();
+
+        if (!uniqueItemsMap.has(normalizedText)) {
+            // Si no existe, lo añadimos
+            uniqueItemsMap.set(normalizedText, item);
+        } else {
+            // Si YA existe, aplicamos la regla:
+            // "Si uno está tachado y otro sin tachar, que se quede el que no está tachado"
+            const existingItem = uniqueItemsMap.get(normalizedText);
+
+            // Si el item que ya tenemos está completado (true) 
+            // Y el item actual que estamos revisando NO está completado (false)
+            // -> Reemplazamos el viejo por el actual (nos quedamos con el pendiente)
+            if (existingItem.completed && !item.completed) {
+                uniqueItemsMap.set(normalizedText, item);
+            }
+            // En cualquier otro caso, nos quedamos con el que ya estaba (prioridad al primero o al que no está tachado)
+        }
+    });
+
+    // Convertimos el mapa de vuelta a un array para poder ordenarlo
+    const itemsArray = Array.from(uniqueItemsMap.values());
+
+    // 3. ORDENAR (Lógica anterior)
+    // Pendientes arriba, tachados abajo
+    itemsArray.sort((a, b) => {
+        if (a.completed === b.completed) return 0;
+        return a.completed ? 1 : -1;
+    });
+
+    // 4. DIBUJAR EN HTML
     itemsArray.forEach(item => {
         const li = document.createElement('li');
         if (item.completed) {
@@ -202,7 +241,6 @@ document.getElementById('item-input').addEventListener('keypress', function(e) {
     }
 });
 
-// Add these new functions
 function showCodeInput() {
     document.querySelector('.code-section').style.display = 'flex';
     document.getElementById('sync-button').style.display = 'none';
@@ -213,43 +251,22 @@ function hideCodeInput() {
     document.getElementById('sync-button').style.display = 'block';
 }
 
-// Modify the connectList function
-function connectList() {
-    const codeInput = document.getElementById('share-code');
-    const code = codeInput.value.trim().toUpperCase();
-
-    if (code.length === 6) {
-        currentCode = code;
-        localStorage.setItem('currentListCode', code);
-        updateCodeDisplay(code);
-        subscribeToList(code);
-        codeInput.value = '';
-        hideCodeInput();
-    }
-}
-
 // Speech Recognition Setup
-let recognition = new webkitSpeechRecognition(); // Or 'SpeechRecognition' if using a browser that supports it directly.
-recognition.lang = 'es-ES'; // Set the language to Spanish
-function startSpeechRecognition() {
-  recognition.start();
-  recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript; // Get the spoken text
-    document.getElementById('item-input').value = transcript; // Display the transcript in the input field
-  };
-}
-
-// Modify the DOMContentLoaded event
-document.addEventListener('DOMContentLoaded', () => {
-    const savedCode = localStorage.getItem('currentListCode');
-    if (savedCode) {
-        currentCode = savedCode;
-        updateCodeDisplay(savedCode);
-        subscribeToList(savedCode);
-        hideCodeInput();
-    } else {
-        initializeNewList();
-        document.getElementById('sync-button').style.display = 'none';
+// Nota: webkitSpeechRecognition puede fallar en navegadores que no sean Chrome/Edge
+// Se añade verificación básica
+if ('webkitSpeechRecognition' in window) {
+    let recognition = new webkitSpeechRecognition(); 
+    recognition.lang = 'es-ES'; 
+    window.startSpeechRecognition = function() {
+      recognition.start();
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript; 
+        document.getElementById('item-input').value = transcript; 
+      };
     }
-});
-
+} else {
+    console.log('Reconocimiento de voz no soportado en este navegador');
+    window.startSpeechRecognition = function() {
+        alert("Tu navegador no soporta el reconocimiento de voz.");
+    }
+}
