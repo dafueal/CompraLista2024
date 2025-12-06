@@ -161,3 +161,21 @@ li {
   vertical-align: middle; /* Center the icon vertically */
 }
 
+/* Estilo para los artículos sugeridos automáticamente */
+li.suggestion {
+    background-color: #f0f0f0; /* Fondo gris suave */
+    opacity: 0.7;
+    border-left: 5px solid #ffa500; /* Borde naranja para destacar */
+    font-style: italic;
+}
+
+li.suggestion .actions {
+    opacity: 0.5; /* Botones un poco transparentes hasta que se confirme */
+}
+
+/* Efecto hover para animar al usuario a aceptarlo */
+li.suggestion:hover {
+    opacity: 1;
+    background-color: #fff;
+    cursor: pointer;
+}
