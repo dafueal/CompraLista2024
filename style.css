@@ -1,3 +1,56 @@
+/* 1. EL TRUCO DE ORO: Evita que el padding aumente el tamaño total */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* 2. Asegurar que el cuerpo no permita scroll lateral */
+body {
+    width: 100%;
+    max-width: 100vw; /* El ancho máximo es el ancho de la ventana */
+    overflow-x: hidden; /* Ocultar cualquier desbordamiento horizontal */
+    font-family: Arial, sans-serif; /* (O la fuente que uses) */
+    padding: 10px; /* Un poco de aire alrededor */
+}
+
+/* 3. Contenedor del input y el botón */
+/* Busca donde tengas el div que envuelve el input y el botón, 
+   o añade una clase o usa el selector adecuado. 
+   Supondré que están en un contenedor o directos en el body */
+
+input, button {
+    max-width: 100%; /* Nunca ser más ancho que la pantalla */
+}
+
+/* Si tienes el input y el botón uno al lado del otro, usa FLEXBOX */
+/* Asumo que tienes una estructura parecida a un div con clase .input-group */
+.input-container {
+    display: flex;
+    gap: 10px; /* Espacio entre input y botón */
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+#item-input {
+    flex-grow: 1; /* El input ocupa todo el espacio disponible */
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    /* Elimina cualquier width: 70% o similar que tuvieras */
+    width: auto; 
+}
+
+/* El botón de añadir (+) */
+/* Asumo que es el botón junto al input */
+button#add-btn { 
+    width: auto; /* Que ocupe lo que necesite su texto/icono */
+    padding: 12px 20px;
+    white-space: nowrap; /* Que el texto no se rompa */
+    flex-shrink: 0; /* Que no se aplaste */
+}
+
+
 /* Reset */
 * {
     margin: 0;
