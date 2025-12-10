@@ -2,27 +2,78 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>CompraLista</title>
-    <link rel="stylesheet" href="style.css"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/vnd.microsoft.icon" href="shopping-cart.ico">
+    <title>CompraLista.2025</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Icono para pantallas de inicio de dispositivos Android -->
+    <link rel="icon" href="/favicon.png" sizes="192x192" type="image/png">
     <link rel="manifest" href="manifest.json">
-    </head>
+    <meta name="theme-color" content="#4CAF50">
+    <link rel="apple-touch-icon" href="shopping-cart.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<!-- Icono para pantallas de inicio de dispositivos iOS -->
+<link rel="apple-touch-icon" sizes="180x180" href="/ruta/al/apple-icon-180x180.png">
+
+<!-- Icono genérico para navegadores -->
+<link rel="icon" type="image/png" sizes="32x32" href="/ruta/al/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/ruta/al/favicon-96x96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/ruta/al/favicon-16x16.png">
+
+<!-- Manifiesto para aplicaciones web -->
+<link rel="manifest" href="/manifest.json">
+</head>
 <body>
+<div class="container">
+    <div class="header">
+        <img src="shopping-cart.png" alt="Shopping Cart" class="cart-icon">
+        <h1>CompraLista.2025</h1>
+        <img src="shopping-cart.png" alt="Shopping Cart" class="cart-icon">
+    </div>
 
-    <div class="container">
-        <h1>Mi Lista</h1>
-        <ul id="shopping-list">Loading...</ul> </div>
+        <div class="code-section">
+            <input type="text" id="share-code" placeholder="Código de lista..." maxlength="6">
+            <button onclick="connectList()" class="connect-btn">Conectar</button>
+        </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    
+        <div class="input-section">
+            <input type="text" id="item-input" placeholder="Añade un producto...">
+             <button onclick="startSpeechRecognition()">
+              <img src="microphone.png" alt="Micrófono" width="15" height="20">
+             </button>
+            <button onclick="addItem()">
+              <img src="add.png" alt="Micrófono" width="15" height="20">
+            </button>
+        </div>
+
+        <ul id="shopping-list"></ul>
+
+        <button onclick="clearAll()" class="clear-btn">Limpiar Lista</button>
+        <button onclick="shareList()" class="share-btn">Compartir Lista</button>
+        <button id="sync-button"onclick="showCodeInput()" class="sync-btn">Sincronizar con otro código</button>
+    </div>
+
+ 
+</body>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="firebase-config.js"></script>
-    
     <script src="script.js"></script>
 
     <script>
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js');
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(registration => {
+              console.log('ServiceWorker registrado con éxito:', registration.scope);
+            })
+            .catch(error => {
+              console.log('Fallo al registrar ServiceWorker:', error);
+            });
+        });
       }
     </script>
 </body>
 </html>
+
